@@ -1,0 +1,40 @@
+[project]
+name = "signalbench"
+version = "0.1.0"
+description = "Evidence-first, resumable signal extraction from messy comment tables."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "openpyxl>=3.1.5",
+  "python-multipart>=0.0.9,<1",
+  "uvicorn>=0.30,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4.0",
+]
+
+[project.scripts]
+signalbench = "signalbench.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/signalbench"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.uv.sources]
+datasentinel = { path = "../datasentinel", editable = true }
+
+[dependency-groups]
+dev = [
+    "datasentinel",
+    "httpx2>=2.12.0",
+]
