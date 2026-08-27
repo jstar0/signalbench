@@ -1,0 +1,14 @@
+{
+  "quality": {
+    "minimum_signal_characters": 3,
+    "boilerplate_contains": ["unsubscribe", "自动回复"]
+  },
+  "classification": {
+    "positive_threshold": 0.2,
+    "negative_threshold": -0.2,
+    "positive": {"稳": 0.7},
+    "negative": {"延迟": -0.6},
+    "topics": {"operations": ["延迟", "稳定", "稳"]},
+    "negative_subtypes": {"risk_concern": ["延迟"]}
+  }
+}
