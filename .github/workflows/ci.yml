@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.11
+      - name: Install locked dependencies
+        run: uv sync --locked --extra dev
+      - name: Test
+        run: uv run pytest
+      - name: Lint
+        run: uv run --with ruff ruff check src tests
+      - name: Check lockfile
+        run: uv lock --check
+      - name: Build package
+        run: uv build
+      - name: Run deterministic benchmark smoke test
+        run: uv run signalbench benchmark --output-dir /tmp/signalbench-ci-benchmark
