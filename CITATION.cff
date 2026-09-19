@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+title: "SignalBench: quality-gated, resumable reports for comment tables"
+message: "If SignalBench is useful in your work, please cite the repository and its release."
+type: software
+authors:
+  - family-names: JSTAR
+    given-names: JSTAR
+license: MIT
+version: 0.1.0
+date-released: 2026-09-04
+abstract: >-
+  A deterministic, privacy-conscious pipeline that ingests heterogeneous
+  CSV/TSV/XLSX comment tables, applies an explicit quality gate, supports
+  resumable classification, and emits reproducible aggregate reports.
