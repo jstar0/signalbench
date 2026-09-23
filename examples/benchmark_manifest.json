@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "fixture": "benchmark.csv",
+  "fixture_sha256": "8943b3542ceaa95278acfd142501982a80cbc813dd68509d7b4d9d8b5f1273be",
+  "purpose": "Deterministic regression benchmark for the bundled classifier and evaluation contract.",
+  "source_notes": "Independently authored synthetic English and Chinese examples; no customer data, model responses, or external corpus rows.",
+  "license": "MIT-compatible original fixture",
+  "annotation_guide": "benchmark_annotation.md",
+  "row_count": 45,
+  "label_support": {
+    "positive": 15,
+    "neutral": 15,
+    "negative": 15
+  },
+  "slices": [
+    "clear_positive",
+    "clear_negative",
+    "neutral_context",
+    "question",
+    "meta_feedback",
+    "mixed_signal",
+    "negation_edge",
+    "cjk"
+  ],
+  "limitations": [
+    "The fixture is small and intentionally diagnostic; it is not a prevalence estimate.",
+    "The deterministic baseline does not claim to resolve negation, sarcasm, or domain-specific language.",
+    "Scores must not be presented as production accuracy or as a customer outcome."
+  ]
+}

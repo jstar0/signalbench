@@ -1,0 +1,9 @@
+record_id,platform,text,created_at
+R01,应用内,搜索一直报错,2026-09-01
+R02,应用内,搜索一直报错,2026-09-01
+R03,网页,https://example.invalid/only-a-link,2026-09-02
+R04,邮件,0,2026-09-03
+R05,应用内,"Great, another crash before checkout",2026-09-04
+R06,网页,这个服务并不好,2026-09-05
+R07,邮件,客服回复很及时,2026-09-06
+R08,应用内,这是骗局吗？,not-a-date
