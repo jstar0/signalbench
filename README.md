@@ -206,8 +206,7 @@ Missing or extra IDs fail loudly, so a partial model export cannot masquerade
 as a complete analysis.
 
 The data-flow invariants and extension seam are documented in
-[`docs/architecture.md`](docs/architecture.md); data-handling rules are in
-[`SECURITY.md`](SECURITY.md).
+[`docs/architecture.md`](docs/architecture.md).
 
 ## Verification
 
@@ -225,18 +224,6 @@ issues, duplicate grouping, deterministic labels, retry behavior, checkpoint
 resume/mismatch rejection, tampered prepared rows, the negative-rate Wilson
 interval, and report generation.
 
-For model limitations, run both `outputs/benchmark` and the deliberately hard
-`outputs/error-cases` fixture described in [`ERROR_CASES.md`](ERROR_CASES.md).
-The balanced score must not be quoted without the error-set result and its
-synthetic-fixture limitation.
-
-For an external check, [`PUBLIC_EVALUATION.md`](PUBLIC_EVALUATION.md) pins the
-TweetEval sentiment test split by commit and three file hashes. The current
-12,284-row result is **0.512 accuracy / 0.365 macro-F1** and predicts neutral for
-86.6% of rows. That weak generalization result is part of the evidence: it
-shows why SignalBench presents this classifier as an offline, reviewable
-baseline rather than a general sentiment model. The script downloads the source
-at evaluation time and writes aggregate metrics only.
 
 `audit` scans publishable text files for high-confidence secret patterns and
 optional forbidden terms while ignoring generated directories. Both kinds of
