@@ -58,19 +58,10 @@ wheels = [
 [[package]]
 name = "datasentinel"
 version = "0.1.0"
-source = { editable = "../datasentinel" }
+source = { git = "https://github.com/jstar0/datasentinel?rev=2b439b112e363f57443aae2b36ffbad1e5d20b9e#2b439b112e363f57443aae2b36ffbad1e5d20b9e" }
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "numpy", specifier = ">=2.2,<3" }]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.3,<9" },
-    { name = "ruff", specifier = ">=0.9,<1" },
 ]
 
 [[package]]
@@ -537,7 +528,7 @@ provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "datasentinel", editable = "../datasentinel" },
+    { name = "datasentinel", git = "https://github.com/jstar0/datasentinel?rev=2b439b112e363f57443aae2b36ffbad1e5d20b9e" },
     { name = "httpx2", specifier = ">=2.12.0" },
 ]
 

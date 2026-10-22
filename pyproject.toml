@@ -31,7 +31,7 @@ testpaths = ["tests"]
 addopts = "-q"
 
 [tool.uv.sources]
-datasentinel = { path = "../datasentinel", editable = true }
+datasentinel = { git = "https://github.com/jstar0/datasentinel", rev = "2b439b112e363f57443aae2b36ffbad1e5d20b9e" }
 
 [dependency-groups]
 dev = [
