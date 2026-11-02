@@ -4,3 +4,4 @@
 
 .pagination{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:16px;padding-top:12px;border-top:1px solid #dfe3dc}.pagination button{border:1px solid #cbd2c9;background:#fff;border-radius:5px;padding:8px 12px;cursor:pointer}.pagination button:disabled{opacity:.45;cursor:not-allowed}.pagination span{font-size:12px;color:#687877}.empty-state{padding:18px;border:1px dashed #cbd2c9;border-radius:6px;text-align:center;background:#f5f4ef}
 .evidence-list section>button{border:1px solid #cbd2c9;background:#fff;border-radius:5px;padding:7px 10px;color:#293735;cursor:pointer}.evidence-list section>button:hover{background:#f5f4ef;border-color:#9d5b3d}
+.replay-banner{background:#fff4d6;border-bottom:1px solid #d9b74a;color:#4a3b05;padding:12px 22px;font-size:13px;line-height:1.7}.replay-banner b{display:block;font-size:14px}.replay-banner p{margin:4px 0 0}.replay-samples{display:grid;gap:8px;margin-top:14px}.replay-samples button{text-align:left}

@@ -2,6 +2,8 @@
 
 **Turn messy CSV/TSV/XLSX comments into quality-gated, resumable reports.**
 
+在线体验（回放数据）：https://jstar0.github.io/signalbench/
+
 SignalBench turns heterogeneous CSV/TSV/XLSX exports into a traceable analysis
 artifact:
 

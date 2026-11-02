@@ -1,6 +1,11 @@
+import "./replay/install";
 import { ChangeEvent, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import { ReplayBanner } from "./replay/ReplayBanner";
+import { replaySamples } from "./replay/engine";
+
+const REPLAY = import.meta.env.VITE_REPLAY === "1";
 
 type Sheet = { asset_id: string; source_sha256: string; sheet: string; columns: string[]; preview_rows: Record<string, string>[] };
 type Imported = { import_id: string; revision: number; sheets: Sheet[]; errors?: Array<{ display_name: string; message: string }> };
@@ -305,7 +310,10 @@ function App() {
   }
 
   async function upload(event: ChangeEvent<HTMLInputElement>) {
-    const files = [...(event.target.files ?? [])];
+    await uploadFiles([...(event.target.files ?? [])]);
+  }
+
+  async function uploadFiles(files: File[]): Promise<Imported | undefined> {
     if (!files.length) return;
     setMessage("正在读取文件和工作表结构…");
     try {
@@ -316,11 +324,23 @@ function App() {
       setResultFilter({ sort: "source", order: "asc", limit: DEFAULT_PAGE_SIZE });
       writeLocation(new URLSearchParams({ view: "import" }));
       setMessage(`已读取 ${next.sheets.length} 个工作表${next.errors?.length ? `，${next.errors.length} 个文件失败` : ""}。请选择真正含反馈正文的表。`);
+      return next;
     } catch (error) { setMessage(error instanceof Error ? error.message : "导入失败"); }
   }
 
-  async function createBatch() {
-    if (!imported || !canMap) return;
+  // Replay only: feed a bundled example file through the normal import path,
+  // then create its quality batch with the column mapping used when recording.
+  async function useSample(sample: (typeof replaySamples)[number]) {
+    const next = await uploadFiles([new File([sample.text], sample.filename, { type: "text/csv" })]);
+    if (!next) return;
+    const key = sheetKey(next.sheets[0]);
+    setIncludedSheets([key]); setSheetMappings({ [key]: sample.ui_mapping });
+    await createBatch(next, [key], { [key]: sample.ui_mapping });
+  }
+
+  async function createBatch(importedArg: Imported | undefined = imported, includedArg: string[] = includedSheets, mappingsArg: Record<string, Mapping> = sheetMappings) {
+    if (!importedArg || !includedArg.length || !includedArg.every((key) => mappingsArg[key]?.text)) return;
+    const imported = importedArg, includedSheets = includedArg, sheetMappings = mappingsArg;
     setMessage("正在保存映射并生成质量批次…");
     try {
       const selectedSheets = imported.sheets.filter((sheet) => includedSheets.includes(sheetKey(sheet)));
@@ -517,9 +537,9 @@ function App() {
   const resultStart = resultPage.filtered_total ? resultPage.offset + 1 : 0;
   const resultEnd = resultPage.offset + resultRows.length;
 
-  return <main><aside><p className="brand">SIGNALBENCH / LOCAL</p><h1>反馈分析</h1><p>从一份反馈表，走到有原文依据的结论。</p><nav><button className={stage === 0 ? "active" : ""} onClick={resetToImport}>01　上传与映射</button><button className={stage === 2 ? "active" : ""} disabled={!batchId} onClick={showQualityPage}>02　输入质量与分析</button><button className={stage === 3 ? "active" : ""} disabled={job?.status !== "succeeded"} onClick={restoreResultPage}>03　结果</button></nav><small>本地文件 · 离线规则 · 不发送到外部服务</small></aside><section className="shell"><header><span>批次 / 导入</span><span>{message}</span></header><div className="heading"><div><p className="eyebrow">DATA WORKSPACE</p><h2>{stage === 0 ? "导入与字段映射" : stage === 2 ? "输入质量与分析" : "分析结果"}</h2></div><b>0{stage === 0 ? 1 : stage === 2 ? 2 : 3}</b></div>
-    {stage === 0 && !imported && <article className="landing"><div className="card upload"><h3>先选择本地 CSV、TSV 或 XLSX</h3><p>一次最多 100 个文件；单文件 16 MiB、每表 128 列、合计 10,000 行。上传后先显示工作表和前 20 行，尚不会创建分析。</p><label className="file"><input type="file" accept=".csv,.tsv,.xlsx" multiple onChange={upload}/><span>选择本地文件</span></label></div>{runs.some((run) => run.status === "succeeded") && <div className="card recent"><h3>最近完成的本地分析</h3>{runs.filter((run) => run.status === "succeeded").slice(0, 5).map((run) => <button key={run.job_id} onClick={() => openRun(run)}><span>{run.job_id.slice(-8)}</span><small>{run.done} / {run.total} 条 · 打开结果</small></button>)}</div>}</article>}
-    {stage === 0 && imported && selected && <article className="grid"><div className="card"><h3>选择工作表</h3>{Boolean(imported.errors?.length) && <div className="notice error-list"><b>{imported.errors!.length} 个文件未导入</b>{imported.errors!.map((item) => <p key={`${item.display_name}-${item.message}`}>{item.display_name}：{item.message}</p>)}</div>}<div className="sheets">{imported.sheets.map((sheet) => <button key={`${sheet.asset_id}-${sheet.sheet}`} className={sheet === selected ? "selected" : includedSheets.includes(sheetKey(sheet)) ? "included" : ""} onClick={() => setSelected(sheet)}>{sheet.sheet}<small>{sheet.columns.length} 列 · {sheet.preview_rows.length} 行预览</small></button>)}</div><button className="sheet-toggle" onClick={() => { const key = sheetKey(selected); setIncludedSheets((current) => current.includes(key) ? current.filter((item) => item !== key) : [...current, key]); }}>{includedSheets.includes(sheetKey(selected)) ? "✓ 此工作表已纳入" : "+ 纳入此工作表"}</button><h3>告诉我们每一列是什么</h3>{(["text", "platform", "author", "record_id", "created_at"] as Array<keyof Mapping>).map((field) => <label key={field}>{labels[field]}{field === "text" && "（必选）"}<select value={mapping[field]} onChange={(event) => update(field, event.target.value)}><option value="">不使用此列</option>{columns.map((column) => <option key={column} value={column}>{column}</option>)}</select></label>)}{mapping.created_at && <label>日期格式<select value={mapping.date_format} onChange={(event) => update("date_format", event.target.value)}><option value="yyyy-mm-dd">YYYY-MM-DD</option><option value="iso8601">ISO8601（含时区）</option></select></label>}<button className="primary" disabled={!canMap} onClick={createBatch}>创建质量批次 →</button></div><div className="card"><h3>源数据预览</h3><table><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{sourcePreview.map((row, index) => <tr key={index}>{columns.map((column) => <td key={column}>{row[column]}</td>)}</tr>)}</tbody></table></div></article>}
+  return <>{REPLAY && <ReplayBanner/>}<main><aside><p className="brand">SIGNALBENCH / LOCAL</p><h1>反馈分析</h1><p>从一份反馈表，走到有原文依据的结论。</p><nav><button className={stage === 0 ? "active" : ""} onClick={resetToImport}>01　上传与映射</button><button className={stage === 2 ? "active" : ""} disabled={!batchId} onClick={showQualityPage}>02　输入质量与分析</button><button className={stage === 3 ? "active" : ""} disabled={job?.status !== "succeeded"} onClick={restoreResultPage}>03　结果</button></nav><small>本地文件 · 离线规则 · 不发送到外部服务</small></aside><section className="shell"><header><span>批次 / 导入</span><span>{message}</span></header><div className="heading"><div><p className="eyebrow">DATA WORKSPACE</p><h2>{stage === 0 ? "导入与字段映射" : stage === 2 ? "输入质量与分析" : "分析结果"}</h2></div><b>0{stage === 0 ? 1 : stage === 2 ? 2 : 3}</b></div>
+    {stage === 0 && !imported && <article className="landing"><div className="card upload"><h3>先选择本地 CSV、TSV 或 XLSX</h3><p>一次最多 100 个文件；单文件 16 MiB、每表 128 列、合计 10,000 行。上传后先显示工作表和前 20 行，尚不会创建分析。</p><label className="file"><input type="file" accept=".csv,.tsv,.xlsx" multiple onChange={upload}/><span>选择本地文件</span></label>{REPLAY && <div className="replay-samples"><h3>使用示例数据</h3>{replaySamples.map((sample) => <button key={sample.id} onClick={() => void useSample(sample)}>{sample.label}</button>)}</div>}</div>{runs.some((run) => run.status === "succeeded") && <div className="card recent"><h3>最近完成的本地分析</h3>{runs.filter((run) => run.status === "succeeded").slice(0, 5).map((run) => <button key={run.job_id} onClick={() => openRun(run)}><span>{run.job_id.slice(-8)}</span><small>{run.done} / {run.total} 条 · 打开结果</small></button>)}</div>}</article>}
+    {stage === 0 && imported && selected && <article className="grid"><div className="card"><h3>选择工作表</h3>{Boolean(imported.errors?.length) && <div className="notice error-list"><b>{imported.errors!.length} 个文件未导入</b>{imported.errors!.map((item) => <p key={`${item.display_name}-${item.message}`}>{item.display_name}：{item.message}</p>)}</div>}<div className="sheets">{imported.sheets.map((sheet) => <button key={`${sheet.asset_id}-${sheet.sheet}`} className={sheet === selected ? "selected" : includedSheets.includes(sheetKey(sheet)) ? "included" : ""} onClick={() => setSelected(sheet)}>{sheet.sheet}<small>{sheet.columns.length} 列 · {sheet.preview_rows.length} 行预览</small></button>)}</div><button className="sheet-toggle" onClick={() => { const key = sheetKey(selected); setIncludedSheets((current) => current.includes(key) ? current.filter((item) => item !== key) : [...current, key]); }}>{includedSheets.includes(sheetKey(selected)) ? "✓ 此工作表已纳入" : "+ 纳入此工作表"}</button><h3>告诉我们每一列是什么</h3>{(["text", "platform", "author", "record_id", "created_at"] as Array<keyof Mapping>).map((field) => <label key={field}>{labels[field]}{field === "text" && "（必选）"}<select value={mapping[field]} onChange={(event) => update(field, event.target.value)}><option value="">不使用此列</option>{columns.map((column) => <option key={column} value={column}>{column}</option>)}</select></label>)}{mapping.created_at && <label>日期格式<select value={mapping.date_format} onChange={(event) => update("date_format", event.target.value)}><option value="yyyy-mm-dd">YYYY-MM-DD</option><option value="iso8601">ISO8601（含时区）</option></select></label>}<button className="primary" disabled={!canMap} onClick={() => void createBatch()}>创建质量批次 →</button></div><div className="card"><h3>源数据预览</h3><table><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{sourcePreview.map((row, index) => <tr key={index}>{columns.map((column) => <td key={column}>{row[column]}</td>)}</tr>)}</tbody></table></div></article>}
     {stage === 2 && <article>
       <div className="stats">
         <span>总行 <b>{qualityTotals.batch_total.toLocaleString()}</b></span>
@@ -595,7 +615,7 @@ function App() {
     </article>}
     {labelTarget && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="label-review-title"><div className="modal-card"><p className="eyebrow">结果复核</p><h3 id="label-review-title">修订情感与主题</h3><blockquote>{labelTarget.text_raw}</blockquote><div className="grid"><label>情感<select value={labelSentiment} onChange={(event) => setLabelSentiment(event.target.value)}><option value="positive">positive</option><option value="neutral">neutral</option><option value="negative">negative</option></select></label><label>主题<select value={labelTopic} onChange={(event) => setLabelTopic(event.target.value)}><option value="pricing">pricing</option><option value="reliability">reliability</option><option value="support">support</option><option value="safety">safety</option><option value="general">general</option></select></label></div><p className="rule-hits">算法原判：{labelTarget.algorithm_topic} / {labelTarget.algorithm_sentiment}<br/>命中：{labelTarget.rule_hits.join(" · ") || "无"}</p><label>复核原因<textarea autoFocus value={labelReason} onChange={(event) => setLabelReason(event.target.value)} placeholder="说明人工判断依据"/></label><div className="modal-actions"><button onClick={() => setLabelTarget(undefined)}>取消</button><button className="primary" disabled={!labelReason.trim()} onClick={saveLabelReview}>保存并重新聚合</button></div></div></div>}
     {reviewTarget && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="review-title"><div className="modal-card"><p className="eyebrow">人工复核</p><h3 id="review-title">{reviewTarget.effective_include ? "从分析范围排除" : "纳入分析范围"}</h3><blockquote>{reviewTarget.text_raw}</blockquote><label>复核原因<textarea autoFocus value={reviewReason} onChange={(event) => setReviewReason(event.target.value)} placeholder="写明可复查的业务原因"/></label><div className="modal-actions"><button onClick={() => setReviewTarget(undefined)}>取消</button><button className="primary" disabled={!reviewReason.trim()} onClick={saveInclusion}>保存复核</button></div></div></div>}
-  </section></main>;
+  </section></main></>;
 }
 
 createRoot(document.getElementById("root")!).render(<App/>);
